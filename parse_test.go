@@ -46,7 +46,7 @@ func TestCsvParserWithoutHook(t *testing.T) {
 		name           string
 		input          []byte
 		headersToAdd   []string
-		parserAdder    func(parser *csvParser[Person])
+		parserAdder    func(parser *CsvParser[Person])
 		expectedResult []Person
 		expectedErr    error
 	}{
@@ -73,7 +73,7 @@ name,age
 frank,13
 anabelle,65`),
 			headersToAdd: []string{},
-			parserAdder: func(parser *csvParser[Person]) {
+			parserAdder: func(parser *CsvParser[Person]) {
 				parser.AddColumnParser("name", nameParser)
 			},
 			expectedResult: []Person{},
@@ -86,7 +86,7 @@ name,age
 frank,13
 anabelle,70`),
 			headersToAdd: []string{},
-			parserAdder: func(parser *csvParser[Person]) {
+			parserAdder: func(parser *CsvParser[Person]) {
 				parser.AddColumnParser("name", nameParser)
 				parser.AddColumnParser("age", ageParser)
 			},
@@ -110,7 +110,7 @@ anabelle,70`),
 frank,13
 anabelle,70`),
 			headersToAdd: []string{"name", "age"},
-			parserAdder: func(parser *csvParser[Person]) {
+			parserAdder: func(parser *CsvParser[Person]) {
 				parser.AddColumnParser("name", nameParser)
 				parser.AddColumnParser("age", ageParser)
 			},
@@ -136,7 +136,7 @@ frank,13
 anabelle,70
 rita,170`),
 			headersToAdd: []string{},
-			parserAdder: func(parser *csvParser[Person]) {
+			parserAdder: func(parser *CsvParser[Person]) {
 				parser.AddColumnParser("name", nameParser)
 				parser.AddColumnParser("age", ageParser)
 			},

@@ -16,30 +16,30 @@ type ParserFunc[ReadTo any] func(value string, destination *ReadTo) error
 type AfterParsingRowFunc[ReadTo any] func(parsedObject ReadTo)
 
 // csvParser is the internal object that will keep all the references needed to parse the file
-type csvParser[ReadTo any] struct {
+type CsvParser[ReadTo any] struct {
 	fileReader       *csv.Reader
 	columnParsers    map[string]ParserFunc[ReadTo]
 	afterParsingHook AfterParsingRowFunc[ReadTo]
 	headers          []string
 }
 
-// NewCsvParserFromBytes instantiates a new csvParser from a []byte input
+// NewCsvParserFromBytes instantiates a new CsvParser from a []byte input
 // The *headers parameter are necessary if your .csv file doesn't contain headers
 // by default. Adding headers to the constructor will make the parser know what to handle.
-func NewCsvParserFromBytes[ReadTo any](input []byte, headers ...string) *csvParser[ReadTo] {
-	return &csvParser[ReadTo]{
+func NewCsvParserFromBytes[ReadTo any](input []byte, headers ...string) *CsvParser[ReadTo] {
+	return &CsvParser[ReadTo]{
 		fileReader:    csv.NewReader(bytes.NewReader(input)),
 		headers:       headers,
 		columnParsers: map[string]ParserFunc[ReadTo]{},
 	}
 }
 
-// NewCsvParserFromReader instantiates a new csvParser from an io.Reader directly.
+// NewCsvParserFromReader instantiates a new CsvParser from an io.Reader directly.
 // Useful when reading from multipart files.
 // The *headers parameter are necessary if your .csv file doesn't contain headers
 // by default. Adding headers to the constructor will make the parser know what to handle.
-func NewCsvParserFromReader[ReadTo any](input io.Reader, headers ...string) *csvParser[ReadTo] {
-	return &csvParser[ReadTo]{
+func NewCsvParserFromReader[ReadTo any](input io.Reader, headers ...string) *CsvParser[ReadTo] {
+	return &CsvParser[ReadTo]{
 		fileReader:    csv.NewReader(input),
 		headers:       headers,
 		columnParsers: map[string]ParserFunc[ReadTo]{},
@@ -47,17 +47,17 @@ func NewCsvParserFromReader[ReadTo any](input io.Reader, headers ...string) *csv
 }
 
 // WithHook adds a handler that will run after every single parsing
-func (c *csvParser[ReadTo]) WithHook(handler AfterParsingRowFunc[ReadTo]) {
+func (c *CsvParser[ReadTo]) WithHook(handler AfterParsingRowFunc[ReadTo]) {
 	c.afterParsingHook = handler
 }
 
 // AddColumnParser adds a parser for each column to the internal parser list
-func (c *csvParser[ReadTo]) AddColumnParser(headerName string, parser ParserFunc[ReadTo]) {
+func (c *CsvParser[ReadTo]) AddColumnParser(headerName string, parser ParserFunc[ReadTo]) {
 	c.columnParsers[headerName] = parser
 }
 
 // Parse returns an array of the object to return ([]ReadTo) from the input data and parsers provided.
-func (c *csvParser[ReadTo]) Parse() ([]ReadTo, error) {
+func (c *CsvParser[ReadTo]) Parse() ([]ReadTo, error) {
 	err := c.prepareHeaders()
 	if err != nil {
 		return []ReadTo{}, err
@@ -67,7 +67,7 @@ func (c *csvParser[ReadTo]) Parse() ([]ReadTo, error) {
 
 // prepareHeaders verifies if the headers and parsers are matched. If the headers are not passed in the constructor,
 // it will load the headers from the file data.
-func (c *csvParser[ReadTo]) prepareHeaders() error {
+func (c *CsvParser[ReadTo]) prepareHeaders() error {
 	if c.areHeadersEmpty() {
 		return c.loadHeadersFromFile()
 	}
@@ -79,12 +79,12 @@ func (c *csvParser[ReadTo]) prepareHeaders() error {
 }
 
 // areHeadersEmpty checks if the headers are empty
-func (c *csvParser[ReadTo]) areHeadersEmpty() bool {
+func (c *CsvParser[ReadTo]) areHeadersEmpty() bool {
 	return len(c.headers) == 0
 }
 
 // areHeadersAndParsersMatched makes sure that each header has an equivalent parser.
-func (c *csvParser[ReadTo]) isThereAnUnparsableHeader() (string, bool) {
+func (c *CsvParser[ReadTo]) isThereAnUnparsableHeader() (string, bool) {
 	for _, header := range c.headers {
 		if !c.existsParserForHeader(header) {
 			return header, true
@@ -94,13 +94,13 @@ func (c *csvParser[ReadTo]) isThereAnUnparsableHeader() (string, bool) {
 }
 
 // existsParserForHeader verifies if there is a parser defined for a specific header
-func (c *csvParser[ReadTo]) existsParserForHeader(header string) bool {
+func (c *CsvParser[ReadTo]) existsParserForHeader(header string) bool {
 	_, ok := c.getParserFor(header)
 	return ok
 }
 
 // loadHeadersFromFile reads the first row in the file and loads it into the headers
-func (c *csvParser[ReadTo]) loadHeadersFromFile() error {
+func (c *CsvParser[ReadTo]) loadHeadersFromFile() error {
 	headers, err := c.fileReader.Read()
 	if err != nil {
 		return ParseError{Msg: fmt.Sprintf("couldn't read headers from file: %s", err.Error())}
@@ -109,7 +109,7 @@ func (c *csvParser[ReadTo]) loadHeadersFromFile() error {
 }
 
 // loadHeaders loads a set of headers into the struct.
-func (c *csvParser[ReadTo]) loadHeaders(headers []string) error {
+func (c *CsvParser[ReadTo]) loadHeaders(headers []string) error {
 	for _, header := range headers {
 		if err := c.loadHeader(header); err != nil {
 			return err
@@ -120,7 +120,7 @@ func (c *csvParser[ReadTo]) loadHeaders(headers []string) error {
 
 // loadHeader loads one header into the struct. If it is not able to be parsed
 // (doesn't have an associated parser), it will return an error.
-func (c *csvParser[ReadTo]) loadHeader(header string) error {
+func (c *CsvParser[ReadTo]) loadHeader(header string) error {
 	header = strings.Trim(header, " ")
 	if !c.isHeaderAbleToBeParsed(header) {
 		return newUnparsableHeaderErr(header)
@@ -130,19 +130,19 @@ func (c *csvParser[ReadTo]) loadHeader(header string) error {
 }
 
 // isHeaderAbleToBeParsed verifies if there is a correspondent parser for said header.
-func (c *csvParser[ReadTo]) isHeaderAbleToBeParsed(header string) bool {
+func (c *CsvParser[ReadTo]) isHeaderAbleToBeParsed(header string) bool {
 	_, ok := c.getParserFor(header)
 	return ok
 }
 
 // getParserFor gets a parser for a specific header.
-func (c *csvParser[ReadTo]) getParserFor(header string) (ParserFunc[ReadTo], bool) {
+func (c *CsvParser[ReadTo]) getParserFor(header string) (ParserFunc[ReadTo], bool) {
 	res, ok := c.columnParsers[header]
 	return res, ok
 }
 
 // parseResults returns the slice of objects to be parsed from the .csv file.
-func (c *csvParser[ReadTo]) parseResults() ([]ReadTo, error) {
+func (c *CsvParser[ReadTo]) parseResults() ([]ReadTo, error) {
 	result := make([]ReadTo, 0)
 	for {
 		object, err := c.readRowAndParseObject()
@@ -158,7 +158,7 @@ func (c *csvParser[ReadTo]) parseResults() ([]ReadTo, error) {
 }
 
 // readRowAndParseObject reads a file row and parses it into an object.
-func (c *csvParser[ReadTo]) readRowAndParseObject() (*ReadTo, error) {
+func (c *CsvParser[ReadTo]) readRowAndParseObject() (*ReadTo, error) {
 	row, err := c.fileReader.Read()
 	if err != nil {
 		return nil, err
@@ -167,7 +167,7 @@ func (c *csvParser[ReadTo]) readRowAndParseObject() (*ReadTo, error) {
 }
 
 // parseRow parses a single row into the target object. Runs the hook for the object if success.
-func (c *csvParser[ReadTo]) parseRow(row []string) (*ReadTo, error) {
+func (c *CsvParser[ReadTo]) parseRow(row []string) (*ReadTo, error) {
 	object := new(ReadTo)
 	err := c.parseColumns(row, object)
 	if err != nil {
@@ -178,18 +178,18 @@ func (c *csvParser[ReadTo]) parseRow(row []string) (*ReadTo, error) {
 }
 
 // runHook runs the hook that is set up in the struct
-func (c *csvParser[ReadTo]) runAfterParsingHook(object *ReadTo) {
+func (c *CsvParser[ReadTo]) runAfterParsingHook(object *ReadTo) {
 	if c.afterParsingHookExists() {
 		c.afterParsingHook(*object)
 	}
 }
 
-func (c *csvParser[ReadTo]) afterParsingHookExists() bool {
+func (c *CsvParser[ReadTo]) afterParsingHookExists() bool {
 	return c.afterParsingHook != nil
 }
 
 // parseColumns parses all the columns into a destination object.
-func (c *csvParser[ReadTo]) parseColumns(row []string, destination *ReadTo) error {
+func (c *CsvParser[ReadTo]) parseColumns(row []string, destination *ReadTo) error {
 	for i, columnValue := range row {
 		err := c.parseColumn(columnValue, c.headers[i], destination)
 		if err != nil {
@@ -200,7 +200,7 @@ func (c *csvParser[ReadTo]) parseColumns(row []string, destination *ReadTo) erro
 }
 
 // parseColumn parses a single column. Uses columnParsers from the columnHeader to do it.
-func (c *csvParser[ReadTo]) parseColumn(columnValue, columnHeader string, destination *ReadTo) error {
+func (c *CsvParser[ReadTo]) parseColumn(columnValue, columnHeader string, destination *ReadTo) error {
 	parser, ok := c.getParserFor(columnHeader)
 	if !ok {
 		return newUnparsableHeaderErr(columnHeader)
