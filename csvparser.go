@@ -15,7 +15,7 @@ type ParserFunc[ReadTo any] func(value string, destination *ReadTo) error
 // AfterParsingRowFunc is a callback/hook that will run after each row is parsed.
 type AfterParsingRowFunc[ReadTo any] func(parsedObject ReadTo)
 
-// csvParser is the internal object that will keep all the references needed to parse the file
+// CsvParser is the internal object that will keep all the references needed to parse the file
 type CsvParser[ReadTo any] struct {
 	fileReader       *csv.Reader
 	columnParsers    map[string]ParserFunc[ReadTo]

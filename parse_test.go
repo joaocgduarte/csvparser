@@ -10,18 +10,18 @@ import (
 	"testing"
 )
 
-type Person struct {
+type person struct {
 	Name   string
 	Age    int
 	School string
 }
 
-func nameParser(value string, into *Person) error {
+func nameParser(value string, into *person) error {
 	into.Name = strings.Trim(value, " ")
 	return nil
 }
 
-func ageParser(value string, into *Person) error {
+func ageParser(value string, into *person) error {
 	value = strings.Trim(value, " ")
 	age, err := strconv.Atoi(value)
 	if err != nil {
@@ -46,8 +46,8 @@ func TestCsvParserWithoutHook(t *testing.T) {
 		name           string
 		input          []byte
 		headersToAdd   []string
-		parserAdder    func(parser *CsvParser[Person])
-		expectedResult []Person
+		parserAdder    func(parser *CsvParser[person])
+		expectedResult []person
 		expectedErr    error
 	}{
 		{
@@ -55,7 +55,7 @@ func TestCsvParserWithoutHook(t *testing.T) {
 			input:          []byte(""),
 			headersToAdd:   []string{},
 			parserAdder:    nil,
-			expectedResult: []Person{},
+			expectedResult: []person{},
 			expectedErr:    ParseError{Msg: fmt.Sprintf("couldn't read headers from file: %s", io.EOF.Error())},
 		},
 		{
@@ -63,7 +63,7 @@ func TestCsvParserWithoutHook(t *testing.T) {
 			input:          []byte(""),
 			headersToAdd:   []string{"header one"},
 			parserAdder:    nil,
-			expectedResult: []Person{},
+			expectedResult: []person{},
 			expectedErr:    ParseError{Msg: fmt.Sprintf("header \"%s\" doesn't have an associated parser", "header one")},
 		},
 		{
@@ -73,10 +73,10 @@ name,age
 frank,13
 anabelle,65`),
 			headersToAdd: []string{},
-			parserAdder: func(parser *CsvParser[Person]) {
+			parserAdder: func(parser *CsvParser[person]) {
 				parser.AddColumnParser("name", nameParser)
 			},
-			expectedResult: []Person{},
+			expectedResult: []person{},
 			expectedErr:    ParseError{Msg: fmt.Sprintf("header \"%s\" doesn't have an associated parser", "age")},
 		},
 		{
@@ -86,11 +86,11 @@ name,age
 frank,13
 anabelle,70`),
 			headersToAdd: []string{},
-			parserAdder: func(parser *CsvParser[Person]) {
+			parserAdder: func(parser *CsvParser[person]) {
 				parser.AddColumnParser("name", nameParser)
 				parser.AddColumnParser("age", ageParser)
 			},
-			expectedResult: []Person{
+			expectedResult: []person{
 				{
 					Name:   "frank",
 					Age:    13,
@@ -110,11 +110,11 @@ anabelle,70`),
 frank,13
 anabelle,70`),
 			headersToAdd: []string{"name", "age"},
-			parserAdder: func(parser *CsvParser[Person]) {
+			parserAdder: func(parser *CsvParser[person]) {
 				parser.AddColumnParser("name", nameParser)
 				parser.AddColumnParser("age", ageParser)
 			},
-			expectedResult: []Person{
+			expectedResult: []person{
 				{
 					Name:   "frank",
 					Age:    13,
@@ -136,18 +136,18 @@ frank,13
 anabelle,70
 rita,170`),
 			headersToAdd: []string{},
-			parserAdder: func(parser *CsvParser[Person]) {
+			parserAdder: func(parser *CsvParser[person]) {
 				parser.AddColumnParser("name", nameParser)
 				parser.AddColumnParser("age", ageParser)
 			},
-			expectedResult: []Person{},
+			expectedResult: []person{},
 			expectedErr:    newParseError(errors.New("impossible age")),
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			parser := NewCsvParserFromBytes[Person](tt.input, tt.headersToAdd...)
+			parser := NewCsvParserFromBytes[person](tt.input, tt.headersToAdd...)
 			if tt.parserAdder != nil {
 				tt.parserAdder(parser)
 			}
@@ -166,17 +166,17 @@ rita,170`),
 }
 
 func TestCsvParserHook(t *testing.T) {
-	middleAgedPeople := make([]Person, 0)
+	middleAgedPeople := make([]person, 0)
 	input := []byte(`
 name,age
 frank,13
 rita, 40
 robert, 25
 anabelle,70`)
-	parser := NewCsvParserFromBytes[Person](input)
+	parser := NewCsvParserFromBytes[person](input)
 	parser.AddColumnParser("name", nameParser)
 	parser.AddColumnParser("age", ageParser)
-	parser.WithHook(func(parsedObject Person) {
+	parser.WithHook(func(parsedObject person) {
 		if parsedObject.School == "middle school" {
 			middleAgedPeople = append(middleAgedPeople, parsedObject)
 		}
@@ -185,7 +185,7 @@ anabelle,70`)
 	if err != nil {
 		t.Errorf("expected nil error, got %v", err)
 	}
-	expectedEndResult := []Person{
+	expectedEndResult := []person{
 		{
 			Name:   "frank",
 			Age:    13,
@@ -208,7 +208,7 @@ anabelle,70`)
 		},
 	}
 
-	expectedMiddleAgedPeople := []Person{
+	expectedMiddleAgedPeople := []person{
 		{
 			Name:   "rita",
 			Age:    40,
