@@ -53,23 +53,27 @@ func NewCsvParserFromReader[ReadTo any](input io.Reader, headers ...string) *Csv
 
 // TerminateOnParsingError sets a flag to finish the parsing if a single row throws an error.
 // if flag is set to false, it will continue to parse and skip the record with the error.
-func (c *CsvParser[ReadTo]) TerminateOnParsingError() {
+func (c *CsvParser[ReadTo]) TerminateOnParsingError() *CsvParser[ReadTo] {
 	c.terminateOnParsingError = true
+	return c
 }
 
 // OnParseError sets a callback that is supposed to be run after a row has a parsing error
-func (c *CsvParser[ReadTo]) OnParseError(callback OnErrorFunc) {
+func (c *CsvParser[ReadTo]) OnParseError(callback OnErrorFunc) *CsvParser[ReadTo] {
 	c.onError = callback
+	return c
 }
 
-// WithHook adds a handler that will run after every single parsing
-func (c *CsvParser[ReadTo]) WithHook(handler AfterParsingRowFunc[ReadTo]) {
+// AfterEachParsingHook adds a handler that will run after every single parsing
+func (c *CsvParser[ReadTo]) AfterEachParsingHook(handler AfterParsingRowFunc[ReadTo]) *CsvParser[ReadTo] {
 	c.afterParsingHook = handler
+	return c
 }
 
 // AddColumnParser adds a parser for each column to the internal parser list
-func (c *CsvParser[ReadTo]) AddColumnParser(headerName string, parser ParserFunc[ReadTo]) {
+func (c *CsvParser[ReadTo]) AddColumnParser(headerName string, parser ParserFunc[ReadTo]) *CsvParser[ReadTo] {
 	c.columnParsers[headerName] = parser
+	return c
 }
 
 // Parse returns an array of the object to return ([]ReadTo) from the input data and parsers provided.

@@ -89,8 +89,8 @@ frank,13
 anabelle,70`),
 			headersToAdd: []string{},
 			parserAdder: func(parser *CsvParser[person]) {
-				parser.AddColumnParser("name", nameParser)
-				parser.AddColumnParser("age", ageParser)
+				parser.AddColumnParser("name", nameParser).
+					AddColumnParser("age", ageParser)
 			},
 			expectedResult: []person{
 				{
@@ -113,8 +113,8 @@ frank,13
 anabelle,70`),
 			headersToAdd: []string{"name", "age"},
 			parserAdder: func(parser *CsvParser[person]) {
-				parser.AddColumnParser("name", nameParser)
-				parser.AddColumnParser("age", ageParser)
+				parser.AddColumnParser("name", nameParser).
+					AddColumnParser("age", ageParser)
 			},
 			expectedResult: []person{
 				{
@@ -139,8 +139,8 @@ anabelle,70
 rita,170`),
 			headersToAdd: []string{},
 			parserAdder: func(parser *CsvParser[person]) {
-				parser.AddColumnParser("name", nameParser)
-				parser.AddColumnParser("age", ageParser)
+				parser.AddColumnParser("name", nameParser).
+					AddColumnParser("age", ageParser)
 			},
 			expectedResult: []person{},
 			expectedErr:    newParseError(impossibleAgeError),
@@ -176,14 +176,15 @@ frank,13
 rita, 40
 robert, 25
 anabelle,70`)
-	parser := NewCsvParserFromBytes[person](input)
-	parser.AddColumnParser("name", nameParser)
-	parser.AddColumnParser("age", ageParser)
-	parser.WithHook(func(parsedObject person) {
-		if parsedObject.School == "middle school" {
-			middleAgedPeople = append(middleAgedPeople, parsedObject)
-		}
-	})
+	parser := NewCsvParserFromBytes[person](input).
+		AddColumnParser("name", nameParser).
+		AddColumnParser("age", ageParser).
+		AfterEachParsingHook(func(parsedObject person) {
+
+			if parsedObject.School == "middle school" {
+				middleAgedPeople = append(middleAgedPeople, parsedObject)
+			}
+		})
 	res, err := parser.Parse()
 	if err != nil {
 		t.Errorf("expected nil error, got %v", err)
@@ -240,22 +241,22 @@ frank,13
 rita, 40
 robert, 25
 anabelle,170`)
-	parser := NewCsvParserFromBytes[person](input)
-	parser.AddColumnParser("name", nameParser)
-	parser.AddColumnParser("age", ageParser)
-	parser.TerminateOnParsingError()
-	parser.OnParseError(func(row []string, err error) {
-		hasOnErrorRan = true
-		expectedRow := []string{"anabelle", "170"}
-		expectedErr := impossibleAgeError
-		if !reflect.DeepEqual(row, expectedRow) {
-			t.Errorf("wanted row %v, got row %v", expectedRow, row)
-		}
-		if err != expectedErr {
-			t.Errorf("wanted error %v, got error %v", expectedErr, err)
-		}
-	})
-	parser.Parse()
+	NewCsvParserFromBytes[person](input).
+		AddColumnParser("name", nameParser).
+		AddColumnParser("age", ageParser).
+		TerminateOnParsingError().
+		OnParseError(func(row []string, err error) {
+			hasOnErrorRan = true
+			expectedRow := []string{"anabelle", "170"}
+			expectedErr := impossibleAgeError
+			if !reflect.DeepEqual(row, expectedRow) {
+				t.Errorf("wanted row %v, got row %v", expectedRow, row)
+			}
+			if err != expectedErr {
+				t.Errorf("wanted error %v, got error %v", expectedErr, err)
+			}
+		}).
+		Parse()
 	if !hasOnErrorRan {
 		t.Errorf("error hook didn't start.")
 	}
@@ -268,10 +269,10 @@ frank,13
 rita, 40
 robert, 25
 anabelle,170`)
-	parser := NewCsvParserFromBytes[person](input)
-	parser.AddColumnParser("name", nameParser)
-	parser.AddColumnParser("age", ageParser)
-	results, err := parser.Parse()
+	results, err := NewCsvParserFromBytes[person](input).
+		AddColumnParser("name", nameParser).
+		AddColumnParser("age", ageParser).
+		Parse()
 
 	expectedResults := []person{
 		{Name: "frank", Age: 13, School: "new school"},
