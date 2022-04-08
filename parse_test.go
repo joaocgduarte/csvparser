@@ -16,6 +16,8 @@ type person struct {
 	School string
 }
 
+var impossibleAgeError = errors.New("impossible age")
+
 func nameParser(value string, into *person) error {
 	into.Name = strings.Trim(value, " ")
 	return nil
@@ -28,7 +30,7 @@ func ageParser(value string, into *person) error {
 		return err
 	}
 	if age > 150 {
-		return errors.New("impossible age")
+		return impossibleAgeError
 	}
 	into.Age = age
 	into.School = "new school"
@@ -141,7 +143,7 @@ rita,170`),
 				parser.AddColumnParser("age", ageParser)
 			},
 			expectedResult: []person{},
-			expectedErr:    newParseError(errors.New("impossible age")),
+			expectedErr:    newParseError(impossibleAgeError),
 		},
 	}
 
@@ -226,5 +228,33 @@ anabelle,70`)
 	}
 	if !reflect.DeepEqual(middleAgedPeople, expectedMiddleAgedPeople) {
 		t.Errorf("expected middle-aged people result %v, got result %v", expectedMiddleAgedPeople, middleAgedPeople)
+	}
+}
+
+func TestOnParseErrorHook(t *testing.T) {
+	hasOnErrorRan := false
+	input := []byte(`
+name,age
+frank,13
+rita, 40
+robert, 25
+anabelle,170`)
+	parser := NewCsvParserFromBytes[person](input)
+	parser.AddColumnParser("name", nameParser)
+	parser.AddColumnParser("age", ageParser)
+	parser.OnParseError(func(row []string, err error) {
+		hasOnErrorRan = true
+		expectedRow := []string{"anabelle", "170"}
+		expectedErr := impossibleAgeError
+		if !reflect.DeepEqual(row, expectedRow) {
+			t.Errorf("wanted row %v, got row %v", expectedRow, row)
+		}
+		if err != expectedErr {
+			t.Errorf("wanted error %v, got error %v", expectedErr, err)
+		}
+	})
+	parser.Parse()
+	if !hasOnErrorRan {
+		t.Errorf("error hook didn't start.")
 	}
 }

@@ -15,10 +15,14 @@ type ParserFunc[ReadTo any] func(value string, destination *ReadTo) error
 // AfterParsingRowFunc is a callback/hook that will run after each row is parsed.
 type AfterParsingRowFunc[ReadTo any] func(parsedObject ReadTo)
 
+// OnErrorFunc is a callback that will run after every parsing error.
+type OnErrorFunc func(row []string, err error)
+
 // CsvParser is the internal object that will keep all the references needed to parse the file
 type CsvParser[ReadTo any] struct {
 	fileReader       *csv.Reader
 	columnParsers    map[string]ParserFunc[ReadTo]
+	onError          OnErrorFunc
 	afterParsingHook AfterParsingRowFunc[ReadTo]
 	headers          []string
 }
@@ -44,6 +48,11 @@ func NewCsvParserFromReader[ReadTo any](input io.Reader, headers ...string) *Csv
 		headers:       headers,
 		columnParsers: map[string]ParserFunc[ReadTo]{},
 	}
+}
+
+// OnParseError sets a callback that is supposed to be run after a row has a parsing error
+func (c *CsvParser[ReadTo]) OnParseError(callback OnErrorFunc) {
+	c.onError = callback
 }
 
 // WithHook adds a handler that will run after every single parsing
@@ -171,10 +180,22 @@ func (c *CsvParser[ReadTo]) parseRow(row []string) (*ReadTo, error) {
 	object := new(ReadTo)
 	err := c.parseColumns(row, object)
 	if err != nil {
+		c.runOnError(row, err)
 		return nil, err
 	}
 	c.runAfterParsingHook(object)
 	return object, nil
+}
+
+// runOnError runs the onError callback.
+func (c *CsvParser[ReadTo]) runOnError(row []string, err error) {
+	if c.onErrorExists() {
+		c.onError(row, err)
+	}
+}
+
+func (c *CsvParser[ReadTo]) onErrorExists() bool {
+	return c.onError != nil
 }
 
 // runHook runs the hook that is set up in the struct
