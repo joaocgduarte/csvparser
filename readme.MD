@@ -1,6 +1,15 @@
 # csvparser
 This package provides a fast and easy-of-use custom mapping from .csv data into Golang structs.
 
+# Index
+- [Pre-requisites](#pre-requisites)
+- [Installation](#installation)
+- [Examples](#examples)
+    - [CSV Parsing from bytes](#csv-parsing-from-bytes)
+    - [Csv Parsing from multipart file / anything that applies the io.Reader](#csv-parsing-from-multipart-file--anything-that-applies-the-ioreader)
+    - [Adding hooks](#adding-hooks)
+    - [Additional Settings](#additional-settings)
+
 ## Pre-requisites
 Since the library uses generics, it is necessary to have `go1.18`
 
