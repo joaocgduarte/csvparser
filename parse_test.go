@@ -43,7 +43,7 @@ func ageParser(value string, into *person) error {
 	return nil
 }
 
-func TestCsvParserWithoutHook(t *testing.T) {
+func TestCsvParserWithoutHookAndFinishingIfParsingErrorIsFound(t *testing.T) {
 	tests := []struct {
 		name           string
 		input          []byte
@@ -150,6 +150,7 @@ rita,170`),
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			parser := NewCsvParserFromBytes[person](tt.input, tt.headersToAdd...)
+			parser.TerminateOnParsingError()
 			if tt.parserAdder != nil {
 				tt.parserAdder(parser)
 			}
@@ -242,6 +243,7 @@ anabelle,170`)
 	parser := NewCsvParserFromBytes[person](input)
 	parser.AddColumnParser("name", nameParser)
 	parser.AddColumnParser("age", ageParser)
+	parser.TerminateOnParsingError()
 	parser.OnParseError(func(row []string, err error) {
 		hasOnErrorRan = true
 		expectedRow := []string{"anabelle", "170"}
@@ -256,5 +258,30 @@ anabelle,170`)
 	parser.Parse()
 	if !hasOnErrorRan {
 		t.Errorf("error hook didn't start.")
+	}
+}
+
+func TestCsvParserDontFinishOnError(t *testing.T) {
+	input := []byte(`
+name,age
+frank,13
+rita, 40
+robert, 25
+anabelle,170`)
+	parser := NewCsvParserFromBytes[person](input)
+	parser.AddColumnParser("name", nameParser)
+	parser.AddColumnParser("age", ageParser)
+	results, err := parser.Parse()
+
+	expectedResults := []person{
+		{Name: "frank", Age: 13, School: "new school"},
+		{Name: "rita", Age: 40, School: "middle school"},
+		{Name: "robert", Age: 25, School: "middle school"},
+	}
+	if !reflect.DeepEqual(results, expectedResults) {
+		t.Errorf("wanted %v, got %v", expectedResults, results)
+	}
+	if err != nil {
+		t.Errorf("wanted nil error, got error %v", err)
 	}
 }

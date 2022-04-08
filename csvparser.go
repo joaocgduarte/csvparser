@@ -20,11 +20,12 @@ type OnErrorFunc func(row []string, err error)
 
 // CsvParser is the internal object that will keep all the references needed to parse the file
 type CsvParser[ReadTo any] struct {
-	fileReader       *csv.Reader
-	columnParsers    map[string]ParserFunc[ReadTo]
-	onError          OnErrorFunc
-	afterParsingHook AfterParsingRowFunc[ReadTo]
-	headers          []string
+	fileReader              *csv.Reader
+	columnParsers           map[string]ParserFunc[ReadTo]
+	onError                 OnErrorFunc
+	afterParsingHook        AfterParsingRowFunc[ReadTo]
+	headers                 []string
+	terminateOnParsingError bool
 }
 
 // NewCsvParserFromBytes instantiates a new CsvParser from a []byte input
@@ -48,6 +49,12 @@ func NewCsvParserFromReader[ReadTo any](input io.Reader, headers ...string) *Csv
 		headers:       headers,
 		columnParsers: map[string]ParserFunc[ReadTo]{},
 	}
+}
+
+// TerminateOnParsingError sets a flag to finish the parsing if a single row throws an error.
+// if flag is set to false, it will continue to parse and skip the record with the error.
+func (c *CsvParser[ReadTo]) TerminateOnParsingError() {
+	c.terminateOnParsingError = true
 }
 
 // OnParseError sets a callback that is supposed to be run after a row has a parsing error
@@ -159,6 +166,9 @@ func (c *CsvParser[ReadTo]) parseResults() ([]ReadTo, error) {
 			break
 		}
 		if err != nil {
+			if !c.terminateOnParsingError {
+				continue
+			}
 			return []ReadTo{}, newParseError(err)
 		}
 		result = append(result, *object)
