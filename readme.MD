@@ -59,9 +59,9 @@ var input = []byte(`
 frank,13
 anabelle,70`)
 
-parser := csvparser.NewCsvParserFromBytes[Person](input, "name", "age")
-parser.AddColumnParser("name", nameHandler)
-parser.AddColumnParser("age", ageHandler)
+parser := csvparser.NewCsvParserFromBytes[Person](input, "name", "age").
+	AddColumnParser("name", nameHandler).
+	AddColumnParser("age", ageHandler)
 ...
 ```
 ### Csv Parsing from multipart file / anything that applies the io.Reader
@@ -72,21 +72,51 @@ func (h *OrderHandler) handlerFunc(w http.ResponseWriter, r *http.Request) {
     if err != nil {
         ...
     }
-	defer file.Close()
-	parser := csvparser.NewCsvParserFromReader[WhateverStruct](file)
-	...
+    defer file.Close()
+    parser := csvparser.NewCsvParserFromReader[WhateverStruct](file)
+    ...
 }
 ```
 
-### Adding a hook
-You can add an hook that will run everytime something is parsed from the .csv file, so that you don't have to do another loop in the results in case you want to add more logic into it.
+### Adding hooks
+
+#### After each successful parsing
+You can add a hook that will run everytime something is parsed from the .csv file, 
+so that you don't have to do another loop in the results in case you want to add more logic into it.
+To do this, use the function `AfterEachParsingHook()`
 
 ```go
-parser := csvparser.NewCsvParserFromBytes[WhateverStruct](input)
+parser := csvparser.NewCsvParserFromBytes[Person](input)
 children := make([]Person, 0)
-parser.WithHook(func(parsedPerson Person) {
+parser.AfterEachParsingHook(func(person Person) {
     if parsedPerson.IsInSchool {
-        children = append(children, parsedObject)
+        children = append(children, person)
     }
 })
+```
+
+#### On Error Hook
+Use the `OnError()` function to handle the error of an invalid row yourself.
+```go
+parser := csvparser.NewCsvParserFromBytes[Person](input).
+    OnError(func(row []string, err error) {
+        log.Printf("row %v has thrown the error: %v", row, err)
+    })
+```
+
+### Additional Settings
+#### Terminate on row parsing hook
+You can choose if you want to throw an error on the parsing results if the input has an invalid row, or 
+just continue and skip that record.
+By default, the behaviour is to skip the error. 
+
+However, you can make it stop and throw an error with the function
+`TerminateOnParsingError()`:
+
+```go
+res, err := csvparser.NewCsvParserFromBytes[Person](input).
+    AddColumnParser("name", nameHandler).
+    AddColumnParser("age", ageHandler).
+    TerminateOnParsingError().
+    Parse()
 ```
