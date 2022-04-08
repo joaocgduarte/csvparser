@@ -8,7 +8,10 @@ This package provides a fast and easy-of-use custom mapping from .csv data into 
     - [CSV Parsing from bytes](#csv-parsing-from-bytes)
     - [Csv Parsing from multipart file / anything that applies the io.Reader](#csv-parsing-from-multipart-file--anything-that-applies-the-ioreader)
     - [Adding hooks](#adding-hooks)
+      - [After each successful parsing](#after-each-successful-parsing)
+      - [On Error Hook](#on-error-hook)
     - [Additional Settings](#additional-settings)
+      - [Terminate on row parsing error](#terminate-on-row-parsing-error)
 
 ## Pre-requisites
 Since the library uses generics, it is necessary to have `go1.18`
@@ -114,7 +117,7 @@ parser := csvparser.NewCsvParserFromBytes[Person](input).
 ```
 
 ### Additional Settings
-#### Terminate on row parsing hook
+#### Terminate on row parsing error
 You can choose if you want to throw an error on the parsing results if the input has an invalid row, or 
 just continue and skip that record.
 By default, the behaviour is to skip the error. 
