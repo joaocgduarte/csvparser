@@ -32,11 +32,7 @@ type CsvParser[ReadTo any] struct {
 // The *headers parameter are necessary if your .csv file doesn't contain headers
 // by default. Adding headers to the constructor will make the parser know what to handle.
 func NewCsvParserFromBytes[ReadTo any](input []byte, headers ...string) *CsvParser[ReadTo] {
-	return &CsvParser[ReadTo]{
-		fileReader:    csv.NewReader(bytes.NewReader(input)),
-		headers:       headers,
-		columnParsers: map[string]ParserFunc[ReadTo]{},
-	}
+	return NewCsvParserFromReader[ReadTo](bytes.NewReader(input), headers...)
 }
 
 // NewCsvParserFromReader instantiates a new CsvParser from an io.Reader directly.
