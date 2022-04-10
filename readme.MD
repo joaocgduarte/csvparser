@@ -1,4 +1,6 @@
 # csvparser
+[![Go Report Card](https://goreportcard.com/badge/github.com/plagioriginal/csvparser)](https://goreportcard.com/report/github.com/plagioriginal/csvparser)
+
 This package provides a fast and easy-of-use custom mapping from .csv data into Golang structs.
 
 # Index
