@@ -2,18 +2,18 @@ package csvparser
 
 import "fmt"
 
-type ParseError struct {
+type parseError struct {
 	Msg string
 }
 
-func (e ParseError) Error() string {
+func (e parseError) Error() string {
 	return fmt.Sprintf("csvparser: %s", e.Msg)
 }
 
-func newUnparsableHeaderErr(header string) ParseError {
-	return ParseError{Msg: fmt.Sprintf("header \"%s\" doesn't have an associated parser", header)}
+func newUnparsableHeaderErr(header string) parseError {
+	return parseError{Msg: fmt.Sprintf("header \"%s\" doesn't have an associated parser", header)}
 }
 
-func newParseError(err error) ParseError {
-	return ParseError{Msg: fmt.Sprintf("file couldn't be parsed: %s", err.Error())}
+func newparseError(err error) parseError {
+	return parseError{Msg: fmt.Sprintf("file couldn't be parsed: %s", err.Error())}
 }

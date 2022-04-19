@@ -25,6 +25,8 @@ type CsvParser[ReadTo any] struct {
 	onError                 OnErrorFunc
 	afterParsingHook        AfterParsingRowFunc[ReadTo]
 	headers                 []string
+	onFinish                func()
+	onStart                 func()
 	terminateOnParsingError bool
 }
 
@@ -32,7 +34,8 @@ type CsvParser[ReadTo any] struct {
 // The *headers parameter are necessary if your .csv file doesn't contain headers
 // by default. Adding headers to the constructor will make the parser know what to handle.
 func NewCsvParserFromBytes[ReadTo any](input []byte, headers ...string) *CsvParser[ReadTo] {
-	return NewCsvParserFromReader[ReadTo](bytes.NewReader(input), headers...)
+	reader := bytes.NewReader(input)
+	return NewCsvParserFromReader[ReadTo](reader, headers...)
 }
 
 // NewCsvParserFromReader instantiates a new CsvParser from an io.Reader directly.
@@ -66,6 +69,18 @@ func (c *CsvParser[ReadTo]) AfterEachParsingHook(handler AfterParsingRowFunc[Rea
 	return c
 }
 
+// OnFinish adds a handler that will run at the end of the file parsing.
+func (c *CsvParser[ReadTo]) OnFinish(handler func()) *CsvParser[ReadTo] {
+	c.onFinish = handler
+	return c
+}
+
+// OnStart adds a handler that will run at the start of the file parsing.
+func (c *CsvParser[ReadTo]) OnStart(handler func()) *CsvParser[ReadTo] {
+	c.onStart = handler
+	return c
+}
+
 // AddColumnParser adds a parser for each column to the internal parser list
 func (c *CsvParser[ReadTo]) AddColumnParser(headerName string, parser ParserFunc[ReadTo]) *CsvParser[ReadTo] {
 	c.columnParsers[headerName] = parser
@@ -74,11 +89,14 @@ func (c *CsvParser[ReadTo]) AddColumnParser(headerName string, parser ParserFunc
 
 // Parse returns an array of the object to return ([]ReadTo) from the input data and parsers provided.
 func (c *CsvParser[ReadTo]) Parse() ([]ReadTo, error) {
+	c.runOnStart()
 	err := c.prepareHeaders()
 	if err != nil {
 		return []ReadTo{}, err
 	}
-	return c.parseResults()
+	res, err := c.parseResults()
+	c.runOnFinish()
+	return res, err
 }
 
 // prepareHeaders verifies if the headers and parsers are matched. If the headers are not passed in the constructor,
@@ -119,7 +137,7 @@ func (c *CsvParser[ReadTo]) existsParserForHeader(header string) bool {
 func (c *CsvParser[ReadTo]) loadHeadersFromFile() error {
 	headers, err := c.fileReader.Read()
 	if err != nil {
-		return ParseError{Msg: fmt.Sprintf("couldn't read headers from file: %s", err.Error())}
+		return parseError{Msg: fmt.Sprintf("couldn't read headers from file: %s", err.Error())}
 	}
 	return c.loadHeaders(headers)
 }
@@ -169,7 +187,7 @@ func (c *CsvParser[ReadTo]) parseResults() ([]ReadTo, error) {
 			if !c.terminateOnParsingError {
 				continue
 			}
-			return []ReadTo{}, newParseError(err)
+			return []ReadTo{}, newparseError(err)
 		}
 		result = append(result, *object)
 	}
@@ -240,4 +258,16 @@ func (c *CsvParser[ReadTo]) parseColumn(columnValue, columnHeader string, destin
 		return err
 	}
 	return nil
+}
+
+func (c *CsvParser[ReadTo]) runOnStart() {
+	if c.onStart != nil {
+		c.onStart()
+	}
+}
+
+func (c *CsvParser[ReadTo]) runOnFinish() {
+	if c.onFinish != nil {
+		c.onFinish()
+	}
 }

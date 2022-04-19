@@ -58,7 +58,7 @@ func TestCsvParserWithoutHookAndFinishingIfParsingErrorIsFound(t *testing.T) {
 			headersToAdd:   []string{},
 			parserAdder:    nil,
 			expectedResult: []person{},
-			expectedErr:    ParseError{Msg: fmt.Sprintf("couldn't read headers from file: %s", io.EOF.Error())},
+			expectedErr:    parseError{Msg: fmt.Sprintf("couldn't read headers from file: %s", io.EOF.Error())},
 		},
 		{
 			name:           "empty input but with headers",
@@ -66,7 +66,7 @@ func TestCsvParserWithoutHookAndFinishingIfParsingErrorIsFound(t *testing.T) {
 			headersToAdd:   []string{"header one"},
 			parserAdder:    nil,
 			expectedResult: []person{},
-			expectedErr:    ParseError{Msg: fmt.Sprintf("header \"%s\" doesn't have an associated parser", "header one")},
+			expectedErr:    parseError{Msg: fmt.Sprintf("header \"%s\" doesn't have an associated parser", "header one")},
 		},
 		{
 			name: "header age without parser should return error",
@@ -79,7 +79,7 @@ anabelle,65`),
 				parser.AddColumnParser("name", nameParser)
 			},
 			expectedResult: []person{},
-			expectedErr:    ParseError{Msg: fmt.Sprintf("header \"%s\" doesn't have an associated parser", "age")},
+			expectedErr:    parseError{Msg: fmt.Sprintf("header \"%s\" doesn't have an associated parser", "age")},
 		},
 		{
 			name: "success with no headers added",
@@ -143,7 +143,7 @@ rita,170`),
 					AddColumnParser("age", ageParser)
 			},
 			expectedResult: []person{},
-			expectedErr:    newParseError(impossibleAgeError),
+			expectedErr:    newparseError(impossibleAgeError),
 		},
 	}
 
@@ -259,6 +259,34 @@ anabelle,170`)
 		Parse()
 	if !hasOnErrorRan {
 		t.Errorf("error hook didn't start.")
+	}
+}
+
+func TestOnStartAndOnFinishHooks(t *testing.T) {
+	hasOnStartRan := false
+	hasOnEndRan := false
+	input := []byte(`
+name,age
+frank,13
+rita, 40
+robert, 25
+anabelle,17`)
+	NewCsvParserFromBytes[person](input).
+		AddColumnParser("name", nameParser).
+		AddColumnParser("age", ageParser).
+		TerminateOnParsingError().
+		OnStart(func() {
+			hasOnStartRan = true
+		}).
+		OnFinish(func() {
+			hasOnEndRan = true
+		}).
+		Parse()
+	if !hasOnStartRan {
+		t.Errorf("start hook didn't start.")
+	}
+	if !hasOnEndRan {
+		t.Errorf("end hook didn't start.")
 	}
 }
 
