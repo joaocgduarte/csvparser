@@ -5,6 +5,7 @@ import (
 	"encoding/csv"
 	"fmt"
 	"io"
+	"reflect"
 	"strings"
 )
 
@@ -270,4 +271,57 @@ func (c *CsvParser[ReadTo]) runOnFinish() {
 	if c.onFinish != nil {
 		c.onFinish()
 	}
+}
+
+/*
+Given array of structs from the parsed csv, prints out the contents of the file parsing in a nice string format.
+The input of the function can take in any type of structs with any number of fields within the struct.
+*/
+func ParseToString(arr []interface{}) string {
+	result := ""
+
+	// For each struct in the given array
+	for j, val := range arr {
+		line := "|-> ("
+
+		// Use reflect package to obtain number of fields in struct
+		v := reflect.ValueOf(val)
+		values := make([]interface{}, v.NumField())
+
+		// Store array of each field in the struct
+		for i := 0; i < v.NumField(); i++ {
+			values[i] = v.Field(i).Interface()
+		}
+
+		if j == 0 {
+			// Add top outline of the printed result
+			for k := 0; k < 20*(v.NumField())+10; k++ {
+				result += "_"
+			}
+			result += "\n"
+		}
+
+		for i, printVal := range values {
+			// Translate each field to a string. Each field started as an interface.
+			str := fmt.Sprintf("%v", printVal)
+			line += str
+
+			if i < len(values)-1 {
+				// Add buffer of spaces between each field on every row. The buffer size is set to 25 chars.
+				for i := 0; i < 25-len(str); i++ {
+					line += " "
+				}
+			} else {
+				line += ")"
+			}
+
+		}
+		if j != 0 {
+			result += "\n"
+		}
+		result += line
+	}
+
+	// Return string of the struct contents in a more readable format
+	return result
 }
