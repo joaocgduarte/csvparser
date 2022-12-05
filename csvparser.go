@@ -277,7 +277,7 @@ func (c *CsvParser[ReadTo]) runOnFinish() {
 Given array of structs from the parsed csv, prints out the contents of the file parsing in a nice string format.
 The input of the function can take in any type of structs with any number of fields within the struct.
 */
-func parseToString(arr []interface{}) string {
+func ParseToString(arr []interface{}) string {
 	result := ""
 
 	// For each struct in the given array
