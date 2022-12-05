@@ -60,6 +60,12 @@ parser.AddColumnParser("age", func (value string, into *Person) error {
 
 // res is []Person type
 res, err := parser.Parse()
+translate := make([]interface{}, len(res))
+	for i, s := range res {
+		translate[i] = s
+	}
+	resultString := parseToString(translate)
+	fmt.Println(resultString)
 ```
 
 Note: as long as there is a parser for the header that you want, the order of the .csv columns will not matter
